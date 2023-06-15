@@ -6,5 +6,3 @@ jcasc:
   - "jcasc/jenkins.yaml"
 plugins:
   - "plugins/plugins.yaml"
-rbac:
-  - "rbac/rbac.yaml"
