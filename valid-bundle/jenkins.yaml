@@ -1,0 +1,9 @@
+jenkins:
+  systemMessage: "Configured by CasC v2"
+  securityRealm:
+    local:
+      allowsSignup: true
+      users:
+        - id: admin
+          name: Administrator
+          password: admin
