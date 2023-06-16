@@ -1,5 +1,5 @@
 apiVersion: "1"
-version: "2"
+version: "4"
 id: "my-bundle"
 description: "A bundle"
 plugins:

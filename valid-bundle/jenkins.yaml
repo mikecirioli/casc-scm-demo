@@ -1,5 +1,5 @@
 jenkins:
-  systemMessage: "Configured by CasC v2"
+  systemMessage: "Configured by CasC v4"
   securityRealm:
     local:
       allowsSignup: true
