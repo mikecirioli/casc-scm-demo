@@ -1,8 +1,0 @@
-removeStrategy:
-  items: "none"
-  rbac: "sync"
-
-root: "/ATH" # see folder-item.yaml
-items:
-  - kind: "folder"
-    name: "sub-folder"
