@@ -1,5 +1,5 @@
 jenkins:
-  systemMessage: "Initial bootstrap CasC bundle!\n\n"
+  systemMessage: "Initial bootstrap CasC bundle! (v2)"
   securityRealm:
     local:
       allowsSignup: true
