@@ -1,9 +1,0 @@
-jenkins:
-  systemMessage: "Initial bootstrap CasC bundle! (v5)"
-  securityRealm:
-    local:
-      allowsSignup: true
-      users:
-        - id: "admin"
-          password: "admin"
-  authorizationStrategy: loggedInUsersCanDoAnything
