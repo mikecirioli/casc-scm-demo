@@ -41,19 +41,6 @@ jenkins:
     local:
       allowsSignup: true
       enableCaptcha: false
-      users:
-      - id: "admin"
-        name: "admin"
-        properties:
-        - "apiToken"
-        - "blueSteelRedirectOptOutProperty"
-        - "myView"
-        - preferredProvider:
-            providerId: "default"
-        - "timezone"
-        - "experimentalFlags"
-        - mailer:
-            emailAddress: "admin@admin"
   slaveAgentPort: 50000
   updateCenter:
     sites:
