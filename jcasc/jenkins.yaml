@@ -1,2 +1,2 @@
 jenkins:
-  systemMessage: "Jenkins configured automatically by Jenkins Configuration as Code plugin vis Casc Retriever!\n\n"
+  systemMessage: "Jenkins configured automatically by Jenkins Configuration as Code plugin via Casc Retriever PR!\n\n"
