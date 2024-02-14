@@ -1,7 +1,7 @@
 apiVersion: "1"
 id: "global-bundle"
 description: "This is a top level parent bundle, it defines no items"
-version: "21"
+version: "22"
 jcasc:
   - "jcasc/jenkins.yaml"
 plugins:
