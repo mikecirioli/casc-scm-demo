@@ -57,7 +57,6 @@ plugins:
 - id: kubernetes-credentials
 - id: mailer
 - id: mapdb-api
-- id: master-provisioning-core
 - id: master-provisioning-kubernetes
 - id: metrics
 - id: mina-sshd-api-common
