@@ -26,7 +26,6 @@ plugins:
 - id: cloudbees-support
 - id: cloudbees-uc-data-api
 - id: cloudbees-unified-ui
-- id: cloudbees-update-center-plugin
 - id: command-launcher
 - id: commons-lang3-api
 - id: commons-text-api
@@ -55,7 +54,6 @@ plugins:
 - id: kubernetes-credentials
 - id: mailer
 - id: mapdb-api
-- id: master-provisioning-kubernetes
 - id: metrics
 - id: mina-sshd-api-common
 - id: mina-sshd-api-core
