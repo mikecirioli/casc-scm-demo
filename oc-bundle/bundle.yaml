@@ -4,5 +4,5 @@ description: "This is a top level parent bundle, it defines no items"
 version: "27"
 jcasc:
   - "jenkins.yaml"
-plugins:
-  - "plugins.yaml"
+#plugins:
+#  - "plugins.yaml"
