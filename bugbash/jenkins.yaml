@@ -186,11 +186,6 @@ security:
     usageStatisticsEnabled: true
   cps:
     hideSandbox: false
-  gitHooks:
-    allowedOnAgents: false
-    allowedOnController: false
-  gitHostKeyVerificationConfiguration:
-    sshHostKeyVerificationStrategy: "knownHostsFileVerificationStrategy"
   scriptApproval:
     forceSandbox: false
 unclassified:
