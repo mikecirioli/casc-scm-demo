@@ -250,7 +250,7 @@ items:
       cpsFlowDefinition:
         sandbox: true
         script: "// Uses Declarative syntax to run commands inside a container.\n\
-          pipeline {\n    agent {\n        label 'static-agent-tcp'\n    }\n    stages\
+          pipeline {\n    agent {\n        label 'tcp-static-agent'\n    }\n    stages\
           \ {\n        stage('create shell script') {\n            steps {\n     \
           \           writeFile(\n                    file: 'run-my-script.sh', \n\
           \                    text: '''\n                        #!/bin/bash\n  \
