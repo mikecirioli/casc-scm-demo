@@ -337,7 +337,6 @@ unclassified:
     autoPollingEnabled: true
     autoPollingIntervalSeconds: 10
     enabled: true
-    pluggableStorageEnabled: false
     searchMaxIndexSize: 1000
   email-ext:
     adminRequiredForTemplateTesting: false
