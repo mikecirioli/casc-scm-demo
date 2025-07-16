@@ -1,0 +1,437 @@
+removeStrategy:
+  rbac: SYNC
+  items: NONE
+items:
+- kind: folder
+  name: k8s agents tests
+  description: ''
+  displayName: k8s agents tests
+  items:
+  - kind: pipeline
+    name: Long Running - Declarative
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "// Uses Declarative syntax to run commands inside a container.\n\
+          pipeline {\n    agent {\n        kubernetes {\n            // Rather than\
+          \ inline YAML, in a multibranch Pipeline you could use: yamlFile 'jenkins-pod.yaml'\n\
+          \            // Or, to avoid YAML:\n            // containerTemplate {\n\
+          \            //     name 'shell'\n            //     image 'ubuntu'\n  \
+          \          //     command 'sleep'\n            //     args 'infinity'\n\
+          \            // }\n            yaml '''\napiVersion: v1\nkind: Pod\nspec:\n\
+          \  containers:\n  - name: shell\n    image: ubuntu\n    command:\n    -\
+          \ sleep\n    args:\n    - infinity\n    securityContext:\n      # ubuntu\
+          \ runs as root by default, it is recommended or even mandatory in some environments\
+          \ (such as pod security admission \"restricted\") to run as a non-root user.\n\
+          \      runAsUser: 1000\n'''\n            // Can also wrap individual steps:\n\
+          \            // container('shell') {\n            //     sh 'hostname'\n\
+          \            // }\n            defaultContainer 'shell'\n            retries\
+          \ 2\n        }\n    }\n    stages {\n        stage('Main') {\n         \
+          \   steps {\n                writeFile(\n                    file: 'run-my-script.sh',\
+          \ \n                    text: '''\n#!/bin/bash\ncount_max=5000\ncount=0\n\
+          echo \"Hello from a long running job!\"\necho \"watch me count to ^${count_max}\"\
+          \n\nwhile [ $count -lt $count_max ];\ndo\n  count=$((count + 1))\n   echo\
+          \ \"The next number is....... ^${count}\"\n   sleep 2\ndone\n'''\n     \
+          \           )\n\n                sh 'chmod +x run-my-script.sh'\n      \
+          \          sh './run-my-script.sh'\n    \n            }\n        }\n   \
+          \ }\n}\n"
+    description: ''
+    disabled: false
+    displayName: Long Running - Declarative
+    resumeBlocked: false
+  - kind: pipeline
+    name: Long Running - Scripted
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "podTemplate(\n    agentContainer: 'maven',\n    agentInjection: true,\n\
+          \    yaml: '''\napiVersion: v1\nkind: Pod\nspec:\n  containers:\n  - name:\
+          \ maven\n    image: maven:latest\n    resources:\n      requests:\n    \
+          \    memory: \"256Mi\"\n      limits:\n        memory: \"512Mi\"\n    command:\n\
+          \    - sleep\n    args:\n    - infinity\n    securityContext:\n      runAsUser:\
+          \ 1000\n''') {\n    retry(count: 2, conditions: [kubernetesAgent(), nonresumable()])\
+          \ {\n      node(POD_LABEL) {\n        stage('create shell script') {\n \
+          \         writeFile(\n            file: 'run-my-script.sh', \n         \
+          \   text: '''\n              #!/bin/bash\n              count_max=5000\n\
+          \              count=0\n              echo \"Hello from a long running job!\"\
+          \n              echo \"watch me count to ^${count_max}\"\n\n           \
+          \   while [ $count -lt $count_max ];\n              do\n              count=$((count\
+          \ + 1))\n                echo \"The next number is....... ^${count}\"\n\
+          \                sleep 2\n              done\n            '''\n        \
+          \    )\n          sh 'chmod +x run-my-script.sh'\n        }\n    \n    \
+          \    stage('run shell script') {\n          sh './run-my-script.sh'\n  \
+          \      }\n      }\n    }\n  }"
+    description: ''
+    disabled: false
+    displayName: Long Running - Scripted
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses EBS to  run declarative downstream
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                  kubernetes {
+                      yaml '''
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: shell
+              image: ubuntu
+              command:
+              - sleep
+              args:
+              - infinity
+              securityContext:
+                runAsUser: 1000
+          '''
+                      defaultContainer 'shell'
+                      retries 2
+                  }
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream declarative job using Emulate Build Step (HA)"
+                          build job: 'Long Running - Declarative'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses EBS to  run declarative downstream
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses EBS to run scripted downstream
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                  kubernetes {
+                      yaml '''
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: shell
+              image: ubuntu
+              command:
+              - sleep
+              args:
+              - infinity
+              securityContext:
+                runAsUser: 1000
+          '''
+                      defaultContainer 'shell'
+                      retries 2
+                  }
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream scripted job using Emulate Build Step (HA)"
+                          build job: 'Long Running - Scripted'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses EBS to run scripted downstream
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses TRJ to run downstream declarative
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                  kubernetes {
+                      yaml '''
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: shell
+              image: ubuntu
+              command:
+              - sleep
+              args:
+              - infinity
+              securityContext:
+                runAsUser: 1000
+          '''
+                      defaultContainer 'shell'
+                      retries 2
+                  }
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream declarative job using Trigger Remote Job"
+                          triggerRemoteJob mode: trackProgressAwaitResult(allowAbort: false, whenFailure: stopAsFailure(), whenScheduledTimeout: continueAsIs(), whenStartedTimeout: continueAsIs(), whenTimeout: continueAsFailure(), whenUnstable: continueAsUnstable()), remotePathMissing: stopAsFailure(), remotePathUrl: 'jenkins://9909c822d118226c6b181a6cbff57dca/k8s agents tests/Long Running - Declarative'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses TRJ to run downstream declarative
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses TRJ to run downstream scripted
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                  kubernetes {
+                      yaml '''
+          apiVersion: v1
+          kind: Pod
+          spec:
+            containers:
+            - name: shell
+              image: ubuntu
+              command:
+              - sleep
+              args:
+              - infinity
+              securityContext:
+                runAsUser: 1000
+          '''
+                      defaultContainer 'shell'
+                      retries 2
+                  }
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream scripted job using Trigger Remote Job"
+                          triggerRemoteJob mode: trackProgressAwaitResult(allowAbort: false, scheduledTimeout: [timeoutStr: ''], startedTimeout: [timeoutStr: ''], timeout: [timeoutStr: '1d'], whenFailure: stopAsFailure(), whenScheduledTimeout: continueAsIs(), whenStartedTimeout: continueAsIs(), whenTimeout: continueAsFailure(), whenUnstable: continueAsUnstable()), remotePathMissing: stopAsFailure(), remotePathUrl: 'jenkins://9909c822d118226c6b181a6cbff57dca/Long Running - Scripted'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses TRJ to run downstream scripted
+    resumeBlocked: false
+  properties:
+  - envVars: {}
+  - itemRestrictions:
+      filter: false
+- kind: folder
+  name: static agent tests
+  displayName: static agent tests
+  items:
+  - kind: pipeline
+    name: Long Running - Declarative on static agent using tcp
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "// Uses Declarative syntax to run commands inside a container.\n\
+          pipeline {\n    agent {\n        label 'static-agent-tcp'\n    }\n    stages\
+          \ {\n        stage('create shell script') {\n            steps {\n     \
+          \           writeFile(\n                    file: 'run-my-script.sh', \n\
+          \                    text: '''\n                        #!/bin/bash\n  \
+          \                      count_max=5000\n                        count=0\n\
+          \                        echo \"Hello from a long running job!\"\n     \
+          \                   echo \"watch me count to ^${count_max}\"\n         \
+          \               \n                        while [ $count -lt $count_max\
+          \ ];\n                        do\n                            count=$((count\
+          \ + 1))\n                            echo \"The next number is....... ^${count}\"\
+          \n                        sleep 2\n                    done\n          \
+          \          '''\n                )\n                sh 'chmod +x run-my-script.sh'\n\
+          \            }\n        }\n        stage('run shell script') {\n       \
+          \     steps {\n                sh './run-my-script.sh'\n            }\n\
+          \        }\n    }\n}\n\n"
+    description: ''
+    disabled: false
+    displayName: Long Running - Declarative on static agent using tcp
+    resumeBlocked: false
+  - kind: pipeline
+    name: Long Running - Declarative on static agent using websockets
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "// Uses Declarative syntax to run commands inside a container.\n\
+          pipeline {\n    agent {\n        label 'websocket-static-agent'\n    }\n\
+          \    stages {\n        stage('create shell script') {\n            steps\
+          \ {\n                writeFile(\n                    file: 'run-my-script.sh',\
+          \ \n                    text: '''\n                        #!/bin/bash\n\
+          \                        count_max=5000\n                        count=0\n\
+          \                        echo \"Hello from a long running job!\"\n     \
+          \                   echo \"watch me count to ^${count_max}\"\n         \
+          \               \n                        while [ $count -lt $count_max\
+          \ ];\n                        do\n                            count=$((count\
+          \ + 1))\n                            echo \"The next number is....... ^${count}\"\
+          \n                        sleep 2\n                    done\n          \
+          \          '''\n                )\n                sh 'chmod +x run-my-script.sh'\n\
+          \            }\n        }\n        stage('run shell script') {\n       \
+          \     steps {\n                sh './run-my-script.sh'\n            }\n\
+          \        }\n    }\n}\n\n"
+    description: ''
+    disabled: false
+    displayName: Long Running - Declarative on static agent using websockets
+    resumeBlocked: false
+  - kind: pipeline
+    name: Long Running - Scripted static agent using tcp
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "// Uses Declarative syntax to run commands inside a container.\n\
+          pipeline {\n    agent {\n        label 'tcp-static-agent'\n    }\n    stages\
+          \ {\n        stage('create shell script') {\n            steps {\n     \
+          \           writeFile(\n                    file: 'run-my-script.sh', \n\
+          \                    text: '''\n                        #!/bin/bash\n  \
+          \                      count_max=5000\n                        count=0\n\
+          \                        echo \"Hello from a long running job!\"\n     \
+          \                   echo \"watch me count to ^${count_max}\"\n         \
+          \               \n                        while [ $count -lt $count_max\
+          \ ];\n                        do\n                            count=$((count\
+          \ + 1))\n                            echo \"The next number is....... ^${count}\"\
+          \n                        sleep 2\n                    done\n          \
+          \          '''\n                )\n                sh 'chmod +x run-my-script.sh'\n\
+          \            }\n        }\n        stage('run shell script') {\n       \
+          \     steps {\n                sh './run-my-script.sh'\n            }\n\
+          \        }\n    }\n}\n\n"
+    description: ''
+    disabled: false
+    displayName: Long Running - Scripted static agent using tcp
+    resumeBlocked: false
+  - kind: pipeline
+    name: Long Running - Scripted static agent using websockets
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "// Uses Declarative syntax to run commands inside a container.\n\
+          pipeline {\n    agent {\n        label 'websocket-static-agent'\n    }\n\
+          \    stages {\n        stage('create shell script') {\n            steps\
+          \ {\n                writeFile(\n                    file: 'run-my-script.sh',\
+          \ \n                    text: '''\n                        #!/bin/bash\n\
+          \                        count_max=5000\n                        count=0\n\
+          \                        echo \"Hello from a long running job!\"\n     \
+          \                   echo \"watch me count to ^${count_max}\"\n         \
+          \               \n                        while [ $count -lt $count_max\
+          \ ];\n                        do\n                            count=$((count\
+          \ + 1))\n                            echo \"The next number is....... ^${count}\"\
+          \n                        sleep 2\n                    done\n          \
+          \          '''\n                )\n                sh 'chmod +x run-my-script.sh'\n\
+          \            }\n        }\n        stage('run shell script') {\n       \
+          \     steps {\n                sh './run-my-script.sh'\n            }\n\
+          \        }\n    }\n}\n\n"
+    description: ''
+    disabled: false
+    displayName: Long Running - Scripted static agent using websockets
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses EBS to  run downstream declarative on static agent using websockets
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "pipeline {\n    agent {\n      label 'websocket-static-agent'\n \
+          \   }\n    \n    stages {\n        stage('Main') {\n            steps {\n\
+          \                echo \"triggering downstream scripted job using Emulate\
+          \ Build Step (HA) on static agent usign websocots\"\n                build\
+          \ job: 'static agent tests/Long Running - Declarative on static agent using\
+          \ websockets'\n                echo \"i guess it all went well!\"\n    \
+          \        }\n        }\n    }\n}\n"
+    description: ''
+    disabled: false
+    displayName: upstream uses EBS to  run downstream declarative on static agent
+      using websockets
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses EBS to run downstream scripted on static agent using tcp
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: "pipeline {\n    agent {\n      label 'tcp-static-agent'\n    }\n\
+          \    \n    stages {\n        stage('Main') {\n            steps {\n    \
+          \            echo \"triggering downstream scripted job using Emulate Build\
+          \ Step (HA) on static agent using tcp\"\n                build job: 'static\
+          \ agent tests/Long Running - Scripted static agent using tcp'\n        \
+          \        echo \"i guess it all went well!\"\n            }\n        }\n\
+          \    }\n}\n"
+    description: ''
+    disabled: false
+    displayName: upstream uses EBS to run downstream scripted on static agent using
+      tcp
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses TRJ to run downstream declarative on static agent using tcp
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                label 'tcp-static-agent'
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream declarative job using Trigger Remote Job on static agent using tcp"
+                          triggerRemoteJob mode: trackProgressAwaitResult(allowAbort: false, whenFailure: stopAsFailure(), whenScheduledTimeout: continueAsIs(), whenStartedTimeout: continueAsIs(), whenTimeout: continueAsFailure(), whenUnstable: continueAsUnstable()), remotePathMissing: stopAsFailure(), remotePathUrl: 'jenkins://9909c822d118226c6b181a6cbff57dca/static agent tests/Long Running - Declarative on static agent using tcp'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses TRJ to run downstream declarative on static agent using
+      tcp
+    resumeBlocked: false
+  - kind: pipeline
+    name: upstream uses TRJ to run downstream scripted on static agent using websockets
+    concurrentBuild: true
+    definition:
+      cpsFlowDefinition:
+        sandbox: true
+        script: |
+          pipeline {
+              agent {
+                label 'websocket-static-agent'
+              }
+              stages {
+                  stage('Main') {
+                      steps {
+                          echo "triggering downstream declarative job using Trigger Remote Job on static agent using websocket"
+                          triggerRemoteJob mode: trackProgressAwaitResult(allowAbort: false, whenFailure: stopAsFailure(), whenScheduledTimeout: continueAsIs(), whenStartedTimeout: continueAsIs(), whenTimeout: continueAsFailure(), whenUnstable: continueAsUnstable()), remotePathMissing: stopAsFailure(), remotePathUrl: 'jenkins://9909c822d118226c6b181a6cbff57dca/static agent tests/Long Running - Declarative on static agent using websockets'
+                          echo "i guess it all went well!"
+                      }
+                  }
+              }
+          }
+    description: ''
+    disabled: false
+    displayName: upstream uses TRJ to run downstream scripted on static agent using
+      websockets
+    resumeBlocked: false
